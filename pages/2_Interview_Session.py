@@ -218,19 +218,23 @@ else:
         audio_file = st.audio_input(label="Record your answer using your microphone")
         
         if audio_file is not None:
-            # Transcription status
-            if st.button("📝 Transcribe Spoken Answer"):
-                with st.spinner("Transcribing speech..."):
+            # Calculate hash of the audio to detect new recordings
+            audio_data = audio_file.getvalue()
+            import hashlib
+            audio_hash = hashlib.md5(audio_data).hexdigest()
+            
+            if st.session_state.get("last_transcribed_audio_hash") != audio_hash:
+                with st.spinner("🎤 Auto-transcribing your speech..."):
                     try:
                         v_manager = VoiceInterviewManager()
-                        audio_data = audio_file.getvalue()
                         transcript = v_manager.transcribe_audio_bytes(audio_data, mime_type=audio_file.type)
                         
-                        # Populate transcription in state for the text area
                         st.session_state.voice_transcript_text = transcript
-                        st.success("Audio transcribed!")
+                        st.session_state.last_transcribed_audio_hash = audio_hash
+                        st.success("Speech auto-transcribed!")
+                        st.rerun()
                     except Exception as e:
-                        st.error(f"Transcription error: {e}")
+                        st.error(f"Auto-transcription error: {e}")
         
         # Display transcription in editable box
         val_text = st.session_state.get("voice_transcript_text", "")
@@ -297,6 +301,8 @@ else:
                         st.session_state.tts_audio_cache = None
                         if "voice_transcript_text" in st.session_state:
                             del st.session_state.voice_transcript_text
+                        if "last_transcribed_audio_hash" in st.session_state:
+                            del st.session_state.last_transcribed_audio_hash
                             
                         st.success("Answer successfully submitted!")
                         time.sleep(1) # Visual feedback pause
