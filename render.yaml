@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-mock-interview-coach
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # You will enter this secret value in Render Dashboard
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_EMAIL
+        value: pulkitbarola20@gmail.com
+      - key: SMTP_PASSWORD
+        sync: false # You will enter your App Password in Render Dashboard
