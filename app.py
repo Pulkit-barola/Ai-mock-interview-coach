@@ -90,7 +90,7 @@ with col2:
                                 if any(x in err_msg for x in ["unreachable", "timed out", "refused", "Timeout"]):
                                     st.session_state.otp_sent = True
                                     st.session_state.otp_message_type = "warning"
-                                    st.session_state.otp_message = "⚠️ Note: Outbound email (SMTP) port is blocked by the cloud provider (Render). Falling back to Simulation Mode. The simulated OTP code has been printed to the server logs (Render Logs dashboard)."
+                                    st.session_state.otp_message = f"⚠️ Note: Outbound email (SMTP) is blocked by the cloud provider. Falling back to Simulation Mode. Please use this verification code: **{st.session_state.otp_code}**"
                                     st.rerun()
                                 else:
                                     st.session_state.otp_sent = False
@@ -98,7 +98,7 @@ with col2:
                             else:
                                 st.session_state.otp_sent = True
                                 st.session_state.otp_message_type = "info"
-                                st.session_state.otp_message = "💡 Developer Mode: SMTP is not configured in .env. The simulated OTP has been printed to the terminal console."
+                                st.session_state.otp_message = f"💡 Developer Mode: SMTP is not configured. Please use this verification code: **{st.session_state.otp_code}**"
                                 rerun_now = True
                                 st.rerun()
         else:
