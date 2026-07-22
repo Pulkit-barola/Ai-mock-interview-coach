@@ -92,22 +92,107 @@ def generate_otp():
 def send_otp_email(email_to, otp):
     """Sends OTP to the target email.
     
-    If SMTP credentials are set in .env:
-      - Sends a real email.
-      - Returns True if successful, or raises/logs error and returns ("error", details).
-    If credentials are NOT set:
-      - Simulates email sending by printing the OTP to the console.
-      - Returns False to indicate simulation/mock.
+    Checks if BREVO_API_KEY or RESEND_API_KEY is configured in env to send via HTTPS REST APIs (recommended for cloud hosting).
+    Otherwise, attempts traditional SMTP if configured in .env.
+    If no credentials are set, falls back to logging/simulating in developer mode.
     """
     from dotenv import load_dotenv
     load_dotenv(override=True)
     
+    brevo_api_key = os.getenv("BREVO_API_KEY", "").strip()
+    resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
+    
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px; color: #1f2937;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="color: #4f46e5; margin-bottom: 20px;">AI Mock Interview Verification</h2>
+            <p style="font-size: 16px; line-height: 1.5;">Hello,</p>
+            <p style="font-size: 16px; line-height: 1.5;">You requested a verification code to access the AI Mock Interview Coach. Please use the following One-Time Password (OTP) to complete your log in:</p>
+            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e1b4b; margin: 25px 0;">
+                {otp}
+            </div>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5; margin-top: 30px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+                This code is valid for 10 minutes. If you did not request this verification, please ignore this email.
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # 1. Try Brevo HTTPS REST API
+    if brevo_api_key:
+        try:
+            import urllib.request
+            import json
+            import ssl
+            
+            url = "https://api.brevo.com/v3/smtp/email"
+            headers = {
+                "accept": "application/json",
+                "api-key": brevo_api_key,
+                "content-type": "application/json"
+            }
+            payload = {
+                "sender": {"name": "AI Mock Coach", "email": "otp@mockinterview.com"},
+                "to": [{"email": email_to}],
+                "subject": "Your AI Mock Interview OTP Verification Code",
+                "htmlContent": body
+            }
+            
+            req = urllib.request.Request(
+                url, 
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            context = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, context=context, timeout=8) as response:
+                print(f"[OTP SUCCESS] Real email sent via Brevo HTTP API to {email_to}")
+                return True
+        except Exception as e:
+            print(f"[OTP BREVO ERROR] Failed to send via Brevo: {e}", flush=True)
+            return "error", f"Brevo HTTP API failed: {e}"
+
+    # 2. Try Resend HTTPS REST API
+    elif resend_api_key:
+        try:
+            import urllib.request
+            import json
+            import ssl
+            
+            url = "https://api.resend.com/emails"
+            headers = {
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "from": "AI Mock Coach <onboarding@resend.dev>",
+                "to": email_to,
+                "subject": "Your AI Mock Interview OTP Verification Code",
+                "html": body
+            }
+            
+            req = urllib.request.Request(
+                url, 
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            context = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, context=context, timeout=8) as response:
+                print(f"[OTP SUCCESS] Real email sent via Resend HTTP API to {email_to}")
+                return True
+        except Exception as e:
+            print(f"[OTP RESEND ERROR] Failed to send via Resend: {e}", flush=True)
+            return "error", f"Resend HTTP API failed: {e}"
+
+    # 3. Otherwise, fallback to SMTP (Gmail/etc.)
     smtp_server = os.getenv("SMTP_SERVER", "").strip()
     smtp_port = os.getenv("SMTP_PORT", "").strip()
     smtp_email = os.getenv("SMTP_EMAIL", "").strip()
     smtp_password = os.getenv("SMTP_PASSWORD", "").strip()
     
-    # Check if credentials exist
     if all([smtp_server, smtp_port, smtp_email, smtp_password]):
         try:
             import smtplib
@@ -119,24 +204,6 @@ def send_otp_email(email_to, otp):
             msg['From'] = smtp_email
             msg['To'] = email_to
             msg['Subject'] = "Your AI Mock Interview OTP Verification Code"
-            
-            body = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px; color: #1f2937;">
-                <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 30px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                    <h2 style="color: #4f46e5; margin-bottom: 20px;">AI Mock Interview Verification</h2>
-                    <p style="font-size: 16px; line-height: 1.5;">Hello,</p>
-                    <p style="font-size: 16px; line-height: 1.5;">You requested a verification code to access the AI Mock Interview Coach. Please use the following One-Time Password (OTP) to complete your log in:</p>
-                    <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e1b4b; margin: 25px 0;">
-                        {otp}
-                    </div>
-                    <p style="font-size: 14px; color: #6b7280; line-height: 1.5; margin-top: 30px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
-                        This code is valid for 10 minutes. If you did not request this verification, please ignore this email.
-                    </p>
-                </div>
-            </body>
-            </html>
-            """
             msg.attach(MIMEText(body, 'html'))
             
             server = smtplib.SMTP(smtp_server, port, timeout=8)
@@ -145,7 +212,7 @@ def send_otp_email(email_to, otp):
             server.sendmail(smtp_email, email_to, msg.as_string())
             server.quit()
             
-            print(f"[OTP SUCCESS] Real email sent to {email_to} with OTP {otp}")
+            print(f"[OTP SUCCESS] Real email sent via SMTP to {email_to} with OTP {otp}", flush=True)
             return True
         except Exception as e:
             print(f"[OTP ERROR] Failed to send email to {email_to}: {e}", flush=True)
