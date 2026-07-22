@@ -79,13 +79,8 @@ def validate_email_deliverability(email):
                         return False
                 return True
     except Exception as e:
-        # Fallback to direct resolution check on network failure or context errors
-        try:
-            import socket
-            socket.gethostbyname(domain)
-            return True
-        except Exception:
-            return False
+        # Fallback: if DNS check fails (e.g. network/SSL error), default to True to avoid blocking valid users
+        return True
     return False
 
 def generate_otp():
@@ -144,7 +139,7 @@ def send_otp_email(email_to, otp):
             """
             msg.attach(MIMEText(body, 'html'))
             
-            server = smtplib.SMTP(smtp_server, port)
+            server = smtplib.SMTP(smtp_server, port, timeout=8)
             server.starttls()
             server.login(smtp_email, smtp_password)
             server.sendmail(smtp_email, email_to, msg.as_string())
