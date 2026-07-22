@@ -223,7 +223,7 @@ else:
                 with st.spinner("Transcribing speech..."):
                     try:
                         v_manager = VoiceInterviewManager()
-                        audio_data = audio_file.read()
+                        audio_data = audio_file.getvalue()
                         transcript = v_manager.transcribe_audio_bytes(audio_data, mime_type=audio_file.type)
                         
                         # Populate transcription in state for the text area

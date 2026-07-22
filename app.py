@@ -122,7 +122,8 @@ with col2:
                                 st.session_state.temp_email
                             )
                             st.session_state.candidate = candidate_db
-                            st.success(f"OTP Verified! Welcome, {st.session_state.temp_name}.")
+                            st.balloons()
+                            st.toast(f"🎉 Login Successful! Welcome, {st.session_state.temp_name}.", icon="🤖")
                             
                             # Clean up OTP session state
                             st.session_state.otp_sent = False
@@ -134,6 +135,8 @@ with col2:
                             if "otp_message_type" in st.session_state:
                                 del st.session_state.otp_message_type
                                 
+                            import time
+                            time.sleep(1.8)
                             st.rerun()
                         except Exception as e:
                             st.error(f"Database error: {e}")

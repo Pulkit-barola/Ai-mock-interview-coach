@@ -32,32 +32,34 @@ class AnswerEvaluator:
         )
 
         prompt = f"""
-You are an expert technical interviewer.
+You are an expert technical interviewer evaluating a candidate's answer for a mock interview question.
 
-Evaluate the candidate.
+Please perform a thorough and objective evaluation of the candidate's answer based on the question, the expected core concepts, and the ideal answer guideline.
 
-Question:
-{question}
+### Evaluation Criteria:
+1. **Technical Accuracy (0-100)**: How technically accurate, correct, and sound is the candidate's answer? Award higher scores for precise explanations and correct definitions.
+2. **Completeness (0-100)**: Did the candidate hit the expected core concepts and cover all parts of the question? Deduct score for missing keywords or concepts.
+3. **Communication Clarity (0-100)**: How clear, professional, well-structured, and easy to understand is their answer?
+4. **Overall Score (0-100)**: The overall score representing their performance. Calculate this as the weighted average of Technical Accuracy (45%), Completeness (40%), and Communication (15%).
 
-Expected Concepts:
-{concepts_str}
+### Input Data:
+- **Question**: {question}
+- **Expected Core Concepts**: {concepts_str}
+- **Ideal Answer Guideline**: {ideal_guideline}
+- **Candidate Answer**: {answer if answer.strip() else "No answer provided"}
 
-Ideal Guideline:
-{ideal_guideline}
+### Output Format:
+You MUST respond with ONLY a valid JSON object matching the schema below. Do not add any markdown, comments, or extra text.
 
-Candidate Answer:
-{answer if answer.strip() else "No answer provided"}
-
-Return ONLY valid JSON.
-
+JSON Schema:
 {{
     "score_accuracy": 80,
     "score_completeness": 80,
     "score_communication": 80,
     "score_overall": 80,
-    "feedback": "Detailed feedback",
+    "feedback": "detailed feedback paragraph explaining strengths, weaknesses, and clear actionable recommendations for improvement",
     "missing_concepts": ["concept1","concept2"],
-    "ideal_answer": "Ideal answer"
+    "ideal_answer": "a complete, polished, and detailed model answer that would score 100%"
 }}
 """
 

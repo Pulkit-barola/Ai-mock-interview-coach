@@ -107,10 +107,10 @@ def send_otp_email(email_to, otp):
     from dotenv import load_dotenv
     load_dotenv(override=True)
     
-    smtp_server = os.getenv("SMTP_SERVER")
-    smtp_port = os.getenv("SMTP_PORT")
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = os.getenv("SMTP_SERVER", "").strip()
+    smtp_port = os.getenv("SMTP_PORT", "").strip()
+    smtp_email = os.getenv("SMTP_EMAIL", "").strip()
+    smtp_password = os.getenv("SMTP_PASSWORD", "").strip()
     
     # Check if credentials exist
     if all([smtp_server, smtp_port, smtp_email, smtp_password]):
