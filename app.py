@@ -53,26 +53,103 @@ with col2:
     st.markdown("### 👤 Candidate Setup")
     
     if st.session_state.candidate is None:
-        st.write("Please configure your profile to start.")
-        with st.form("candidate_form"):
-            name = st.text_input("Full Name", placeholder="e.g. Jane Doe")
-            email = st.text_input("Email Address", placeholder="e.g. jane.doe@example.com")
-            submit = st.form_submit_button("Create Profile")
+        if not st.session_state.otp_sent:
+            st.write("Please configure your profile to start.")
+            with st.form("candidate_form"):
+                name = st.text_input("Full Name", placeholder="e.g. Jane Doe")
+                email = st.text_input("Email Address", placeholder="e.g. jane.doe@example.com")
+                submit = st.form_submit_button("Send Verification OTP")
+                
+                if submit:
+                    import re
+                    email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+                    if not name.strip() or not email.strip():
+                        st.error("Name and Email are required.")
+                    elif not re.match(email_pattern, email.strip()):
+                        st.error("Please enter a valid email address.")
+                    else:
+                        from utils.helpers import generate_otp, send_otp_email, validate_email_deliverability
+                        if not validate_email_deliverability(email.strip()):
+                            st.error("❌ The email domain does not exist or cannot receive emails. Please check your email ID.")
+                        else:
+                            otp = generate_otp()
+                            st.session_state.otp_code = otp
+                            st.session_state.temp_name = name.strip()
+                            st.session_state.temp_email = email.lower().strip()
+                            
+                            send_result = send_otp_email(st.session_state.temp_email, otp)
+                            
+                            if send_result is True:
+                                st.session_state.otp_sent = True
+                                st.session_state.otp_message_type = "success"
+                                st.session_state.otp_message = f"OTP successfully sent to **{st.session_state.temp_email}**! Please check your inbox."
+                                st.rerun()
+                            elif isinstance(send_result, tuple) and send_result[0] == "error":
+                                st.session_state.otp_sent = False
+                                st.error(f"⚠️ Failed to send verification email to **{st.session_state.temp_email}**: {send_result[1]}. Please check your email ID or configuration.")
+                            else:
+                                st.session_state.otp_sent = True
+                                st.session_state.otp_message_type = "info"
+                                st.session_state.otp_message = "💡 Developer Mode: SMTP is not configured in .env. The simulated OTP has been printed to the terminal console."
+                                rerun_now = True
+                                st.rerun()
+        else:
+            st.markdown(f"""
+            <div class='premium-card' style='border-left: 4px solid #4f46e5;'>
+                <h4>Verification Required</h4>
+                <p>Verifying email: <b>{st.session_state.temp_email}</b></p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if submit:
-                if not name.strip() or not email.strip():
-                    st.error("Name and Email are required.")
-                elif "@" not in email:
-                    st.error("Please enter a valid email address.")
+            if "otp_message" in st.session_state:
+                if st.session_state.otp_message_type == "success":
+                    st.success(st.session_state.otp_message)
+                elif st.session_state.otp_message_type == "warning":
+                    st.warning(st.session_state.otp_message)
                 else:
-                    try:
-                        # Save candidate details to DB
-                        candidate_db = st.session_state.db.create_or_get_candidate(name, email)
-                        st.session_state.candidate = candidate_db
-                        st.success(f"Profile saved! Welcome, {name}.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Database error: {e}")
+                    st.info(st.session_state.otp_message)
+            
+            with st.form("otp_verification_form"):
+                entered_otp = st.text_input("Enter 6-Digit OTP", placeholder="e.g. 123456")
+                verify_submit = st.form_submit_button("Verify & Login")
+                
+                if verify_submit:
+                    if entered_otp.strip() == st.session_state.otp_code:
+                        try:
+                            # Save candidate details to DB
+                            candidate_db = st.session_state.db.create_or_get_candidate(
+                                st.session_state.temp_name, 
+                                st.session_state.temp_email
+                            )
+                            st.session_state.candidate = candidate_db
+                            st.success(f"OTP Verified! Welcome, {st.session_state.temp_name}.")
+                            
+                            # Clean up OTP session state
+                            st.session_state.otp_sent = False
+                            st.session_state.otp_code = None
+                            st.session_state.temp_name = None
+                            st.session_state.temp_email = None
+                            if "otp_message" in st.session_state:
+                                del st.session_state.otp_message
+                            if "otp_message_type" in st.session_state:
+                                del st.session_state.otp_message_type
+                                
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Database error: {e}")
+                    else:
+                        st.error("Invalid verification code. Please check the code and try again.")
+            
+            if st.button("Cancel & Edit Details"):
+                st.session_state.otp_sent = False
+                st.session_state.otp_code = None
+                st.session_state.temp_name = None
+                st.session_state.temp_email = None
+                if "otp_message" in st.session_state:
+                    del st.session_state.otp_message
+                if "otp_message_type" in st.session_state:
+                    del st.session_state.otp_message_type
+                st.rerun()
     else:
         st.markdown(f"""
         <div class='dark-premium-card'>
@@ -89,6 +166,10 @@ with col2:
             st.session_state.resume_data = None
             st.session_state.session_id = None
             st.session_state.interview_active = False
+            st.session_state.otp_sent = False
+            st.session_state.otp_code = None
+            st.session_state.temp_name = None
+            st.session_state.temp_email = None
             st.rerun()
 
 # Feature Highlights Cards Grid
