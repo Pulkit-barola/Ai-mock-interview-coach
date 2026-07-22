@@ -11,7 +11,8 @@ class ResumeParser:
 
     def __init__(self, api_key=None):
         # Configure Gemini API
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        from utils.helpers import get_gemini_api_key
+        self.api_key = api_key or get_gemini_api_key()
         if self.api_key:
             genai.configure(api_key=self.api_key)
         else:
@@ -38,7 +39,8 @@ class ResumeParser:
         """Uses Gemini API to structure raw resume text into JSON format."""
         if not self.api_key:
             # Check env again in case it was set dynamically
-            self.api_key = os.getenv("GEMINI_API_KEY")
+            from utils.helpers import get_gemini_api_key
+            self.api_key = get_gemini_api_key()
             if not self.api_key:
                 raise ValueError("Gemini API Key is not configured.")
             genai.configure(api_key=self.api_key)
@@ -106,7 +108,8 @@ class ResumeParser:
     def analyze_role_alignment(self, resume_data, role, custom_requirements=None):
         """Analyzes how well the candidate's parsed resume fits the selected job role."""
         if not self.api_key:
-            self.api_key = os.getenv("GEMINI_API_KEY")
+            from utils.helpers import get_gemini_api_key
+            self.api_key = get_gemini_api_key()
             if not self.api_key:
                 raise ValueError("Gemini API Key is not configured.")
             genai.configure(api_key=self.api_key)

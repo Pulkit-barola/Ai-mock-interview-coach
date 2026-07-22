@@ -241,15 +241,30 @@ def send_otp_email(email_to, otp):
         return False
 
 
-def check_env_api_key():
-    """Checks if GEMINI_API_KEY is configured in the environment."""
+def get_gemini_api_key():
+    """Retrieves the Gemini API Key from environment or Streamlit secrets."""
     from dotenv import load_dotenv
-    load_dotenv(override=True) # Load from .env if present
+    load_dotenv(override=True)
+    
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if api_key:
+        return api_key
+        
+    try:
+        import streamlit as st
+        # Check Streamlit Secrets fallback (Streamlit Community Cloud)
+        api_key = st.secrets.get("GEMINI_API_KEY", "").strip()
+        if api_key:
+            return api_key
+    except Exception:
+        pass
+        
+    return None
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return False
-    return True
+
+def check_env_api_key():
+    """Checks if GEMINI_API_KEY is configured in the environment or Streamlit secrets."""
+    return get_gemini_api_key() is not None
 
 def apply_custom_css():
     """Injects custom Google Fonts and premium CSS styling into Streamlit."""

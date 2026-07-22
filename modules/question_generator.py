@@ -9,7 +9,8 @@ class QuestionGenerator:
     """Generates personalized, structured interview questions based on resumes, roles, difficulty levels, and history."""
 
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        from utils.helpers import get_gemini_api_key
+        self.api_key = api_key or get_gemini_api_key()
         if self.api_key:
             genai.configure(api_key=self.api_key)
         else:
@@ -18,7 +19,8 @@ class QuestionGenerator:
     def generate_question(self, resume_summary, candidate_skills, role, difficulty, history=None, target_type=None):
         """Generates a question using Gemini API tailored to candidate details, role, difficulty, and type."""
         if not self.api_key:
-            self.api_key = os.getenv("GEMINI_API_KEY")
+            from utils.helpers import get_gemini_api_key
+            self.api_key = get_gemini_api_key()
             if not self.api_key:
                 raise ValueError("Gemini API Key is not configured.")
             genai.configure(api_key=self.api_key)

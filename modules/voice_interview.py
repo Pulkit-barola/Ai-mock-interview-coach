@@ -10,7 +10,8 @@ class VoiceInterviewManager:
     """Manages audio transcription using Gemini's native audio capability, and Text-to-Speech using gTTS."""
 
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        from utils.helpers import get_gemini_api_key
+        self.api_key = api_key or get_gemini_api_key()
         if self.api_key:
             genai.configure(api_key=self.api_key)
         else:
@@ -39,7 +40,8 @@ class VoiceInterviewManager:
         This uses inline audio submission, which avoids the overhead of uploading files to the Gemini File API.
         """
         if not self.api_key:
-            self.api_key = os.getenv("GEMINI_API_KEY")
+            from utils.helpers import get_gemini_api_key
+            self.api_key = get_gemini_api_key()
             if not self.api_key:
                 raise ValueError("Gemini API Key is not configured.")
             genai.configure(api_key=self.api_key)

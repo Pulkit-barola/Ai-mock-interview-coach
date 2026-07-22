@@ -10,7 +10,8 @@ class AnswerEvaluator:
     """Evaluates interview answers using Gemini."""
 
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        from utils.helpers import get_gemini_api_key
+        self.api_key = api_key or get_gemini_api_key()
 
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found.")
