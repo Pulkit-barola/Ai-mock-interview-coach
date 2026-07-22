@@ -101,7 +101,7 @@ class ResumeParser:
             elif response_text.startswith("```"):
                 response_text = response_text.replace("```", "").strip()
                 
-            parsed_data = json.loads(response_text)
+            parsed_data = json.loads(response_text, strict=False)
             logger.info("Successfully parsed resume text via Gemini API.")
             return parsed_data
         except json.JSONDecodeError as je:
@@ -193,7 +193,7 @@ class ResumeParser:
             elif response_text.startswith("```"):
                 response_text = response_text.replace("```", "").strip()
 
-            alignment_data = json.loads(response_text)
+            alignment_data = json.loads(response_text, strict=False)
             logger.info(f"Successfully analyzed role alignment for {role}.")
             return alignment_data
         except Exception as e:

@@ -101,7 +101,7 @@ JSON Schema:
                     .strip()
                 )
 
-            evaluation = json.loads(response_text)
+            evaluation = json.loads(response_text, strict=False)
 
             required = [
                 "score_accuracy",
