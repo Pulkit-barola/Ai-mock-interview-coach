@@ -148,7 +148,10 @@ def send_otp_email(email_to, otp):
             print(f"[OTP SUCCESS] Real email sent to {email_to} with OTP {otp}")
             return True
         except Exception as e:
-            print(f"[OTP ERROR] Failed to send email to {email_to}: {e}")
+            print(f"[OTP ERROR] Failed to send email to {email_to}: {e}", flush=True)
+            print(f"\n==================================================", flush=True)
+            print(f"[OTP FALLBACK SIMULATION] OTP for {email_to}: {otp}", flush=True)
+            print(f"==================================================\n", flush=True)
             return "error", str(e)
     else:
         # SMTP not configured - simulate

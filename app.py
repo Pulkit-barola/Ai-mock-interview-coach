@@ -85,8 +85,16 @@ with col2:
                                 st.session_state.otp_message = f"OTP successfully sent to **{st.session_state.temp_email}**! Please check your inbox."
                                 st.rerun()
                             elif isinstance(send_result, tuple) and send_result[0] == "error":
-                                st.session_state.otp_sent = False
-                                st.error(f"⚠️ Failed to send verification email to **{st.session_state.temp_email}**: {send_result[1]}. Please check your email ID or configuration.")
+                                err_msg = send_result[1]
+                                # Check if it is a cloud network block (unreachable, timeout, refused, etc.)
+                                if any(x in err_msg for x in ["unreachable", "timed out", "refused", "Timeout"]):
+                                    st.session_state.otp_sent = True
+                                    st.session_state.otp_message_type = "warning"
+                                    st.session_state.otp_message = "⚠️ Note: Outbound email (SMTP) port is blocked by the cloud provider (Render). Falling back to Simulation Mode. The simulated OTP code has been printed to the server logs (Render Logs dashboard)."
+                                    st.rerun()
+                                else:
+                                    st.session_state.otp_sent = False
+                                    st.error(f"⚠️ Failed to send verification email to **{st.session_state.temp_email}**: {err_msg}. Please check your email ID or configuration.")
                             else:
                                 st.session_state.otp_sent = True
                                 st.session_state.otp_message_type = "info"
