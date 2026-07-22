@@ -95,7 +95,13 @@ class ResumeParser:
                 }
             )
             
-            parsed_data = json.loads(response.text.strip())
+            response_text = response.text.strip()
+            if response_text.startswith("```json"):
+                response_text = response_text.replace("```json", "").replace("```", "").strip()
+            elif response_text.startswith("```"):
+                response_text = response_text.replace("```", "").strip()
+                
+            parsed_data = json.loads(response_text)
             logger.info("Successfully parsed resume text via Gemini API.")
             return parsed_data
         except json.JSONDecodeError as je:
@@ -124,6 +130,19 @@ class ResumeParser:
         }
 
         role_desc = custom_requirements if role == "Custom Role" else role_benchmarks.get(role, "General Software/Data Engineering skills")
+        
+        # Safely convert list elements to prevent TypeError: can only join an iterable
+        def safe_join(field_name):
+            val = resume_data.get(field_name)
+            if not val:
+                return "None listed"
+            if isinstance(val, list):
+                return ', '.join([str(item) for item in val if item])
+            return str(val)
+
+        skills_str = safe_join("skills")
+        tools_str = safe_join("tools")
+        langs_str = safe_join("programming_languages")
 
         prompt = f"""
         You are an AI Interview Coach. Compare the candidate's parsed resume details with the standard requirements for a "{role}" role.
@@ -134,9 +153,9 @@ class ResumeParser:
         Candidate Resume Summary:
         {resume_data.get("summary", "")}
 
-        Candidate Skills: {', '.join(resume_data.get("skills", []))}
-        Candidate Tools: {', '.join(resume_data.get("tools", []))}
-        Candidate Languages: {', '.join(resume_data.get("programming_languages", []))}
+        Candidate Skills: {skills_str}
+        Candidate Tools: {tools_str}
+        Candidate Languages: {langs_str}
 
         Analyze the fit and identify:
         1. Missing skills/technologies that are usually expected for this role.
@@ -167,16 +186,23 @@ class ResumeParser:
                 }
             )
             
-            alignment_data = json.loads(response.text.strip())
+            response_text = response.text.strip()
+            # Clean up markdown code blocks if Gemini returned them
+            if response_text.startswith("```json"):
+                response_text = response_text.replace("```json", "").replace("```", "").strip()
+            elif response_text.startswith("```"):
+                response_text = response_text.replace("```", "").strip()
+
+            alignment_data = json.loads(response_text)
             logger.info(f"Successfully analyzed role alignment for {role}.")
             return alignment_data
         except Exception as e:
             logger.error(f"Error performing role alignment: {e}", exc_info=True)
-            # Return safe default structure on error
+            # Return safe default structure on error with error message in fit_explanation
             return {
                 "missing_skills": ["Unable to determine missing skills due to API issue"],
                 "role_strengths": ["Skills extracted from resume"],
                 "role_weaknesses": ["Improvement areas to be verified during interview"],
                 "suitability_score": 50,
-                "fit_explanation": "Could not calculate fit analysis. Proceeding with interview session."
+                "fit_explanation": f"Could not calculate fit analysis: {str(e)}. Proceeding with interview session."
             }
