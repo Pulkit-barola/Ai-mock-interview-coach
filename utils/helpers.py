@@ -242,18 +242,28 @@ def send_otp_email(email_to, otp):
 
 
 def get_gemini_api_key():
-    """Retrieves the Gemini API Key from environment or Streamlit secrets."""
+    """Retrieves the Gemini API Key from environment or Streamlit secrets, filtering out placeholders and stripping quotes."""
     from dotenv import load_dotenv
     load_dotenv(override=True)
     
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    def clean_key(key):
+        if not key:
+            return None
+        cleaned = key.strip().strip("'\"")
+        cleaned_lower = cleaned.lower()
+        # Ignore common placeholder values
+        if any(x in cleaned_lower for x in ["your_", "placeholder", "api_key_here", "api_key", "your-"]):
+            return None
+        return cleaned
+
+    api_key = clean_key(os.getenv("GEMINI_API_KEY"))
     if api_key:
         return api_key
         
     try:
         import streamlit as st
         # Check Streamlit Secrets fallback (Streamlit Community Cloud)
-        api_key = st.secrets.get("GEMINI_API_KEY", "").strip()
+        api_key = clean_key(st.secrets.get("GEMINI_API_KEY"))
         if api_key:
             return api_key
     except Exception:
