@@ -230,6 +230,7 @@ else:
                         transcript = v_manager.transcribe_audio_bytes(audio_data, mime_type=audio_file.type)
                         
                         st.session_state.voice_transcript_text = transcript
+                        st.session_state.voice_answer_textarea = transcript
                         st.session_state.last_transcribed_audio_hash = audio_hash
                         st.success("Speech auto-transcribed!")
                         st.rerun()
@@ -301,6 +302,8 @@ else:
                         st.session_state.tts_audio_cache = None
                         if "voice_transcript_text" in st.session_state:
                             del st.session_state.voice_transcript_text
+                        if "voice_answer_textarea" in st.session_state:
+                            del st.session_state.voice_answer_textarea
                         if "last_transcribed_audio_hash" in st.session_state:
                             del st.session_state.last_transcribed_audio_hash
                             
