@@ -104,6 +104,9 @@ def send_otp_email(email_to, otp):
       - Simulates email sending by printing the OTP to the console.
       - Returns False to indicate simulation/mock.
     """
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+    
     smtp_server = os.getenv("SMTP_SERVER")
     smtp_port = os.getenv("SMTP_PORT")
     smtp_email = os.getenv("SMTP_EMAIL")
