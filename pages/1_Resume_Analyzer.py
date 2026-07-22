@@ -73,9 +73,22 @@ with col1:
                     st.session_state.resume_parsed = True
                     st.session_state.resume_data = parsed_json
                     st.session_state.resume_db_id = resume_id
-                    st.session_state.role_alignment = None # Reset alignment for new resume
                     
-                    st.success("Resume parsed and saved successfully!")
+                    # Auto run alignment on upload/parse
+                    try:
+                        role = st.session_state.selected_role
+                        alignment = parser.analyze_role_alignment(
+                            resume_data=parsed_json,
+                            role=role,
+                            custom_requirements=None
+                        )
+                        st.session_state.role_alignment = alignment
+                        missing_skills_dict = {role: alignment.get("missing_skills", [])}
+                        db.update_resume_missing_skills(candidate_id, missing_skills_dict)
+                    except Exception:
+                        st.session_state.role_alignment = None
+                    
+                    st.success("Resume parsed and analyzed successfully!")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error parsing resume: {e}")
